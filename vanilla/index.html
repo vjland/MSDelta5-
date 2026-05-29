@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MetaState/d5</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            zinc: {
+              100: '#f4f4f5',
+              400: '#a1a1aa',
+              700: '#3f3f46',
+              800: '#27272a',
+              900: '#18181b',
+              950: '#09090b',
+            },
+            amber: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+            },
+            live: {
+              500: '#4DCCBD',
+              600: '#3BB2A5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="baccarat-calculator.js"></script>
+</head>
+<body class="h-[100dvh] w-full flex flex-col bg-zinc-950 text-zinc-100 font-sans overflow-hidden">
+  <!-- Header -->
+  <div class="flex-none flex justify-between items-center p-4 bg-zinc-900 border-b border-zinc-800 shadow-sm z-10">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <div class="flex items-center justify-center w-10 h-10 bg-zinc-950 rounded-xl border border-zinc-800 shadow-[0_0_15px_rgba(14,165,233,0.15)] flex-shrink-0 p-1.5">
+          <svg viewBox="0 0 64 64" fill="none" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="header-grad-vanilla" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0EA5E9" />
+                <stop offset="100%" stop-color="#4DCCBD" />
+              </linearGradient>
+            </defs>
+            <path d="M16 44 L24 22 L32 34 L40 22 L48 44" stroke="url(#header-grad-vanilla)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M24 38 H40" stroke="#F4F4F5" stroke-width="2.5" stroke-linecap="round" />
+            <circle cx="45" cy="16" r="5" fill="#4DCCBD" />
+          </svg>
+        </div>
+        <span class="text-md md:text-lg font-extrabold tracking-tight text-white flex items-center pr-2">
+          MetaState<span class="text-[#0EA5E9]">/</span><span class="text-[#4DCCBD] font-black italic">d5</span>
+        </span>
+      </div>
+      <div class="flex items-center bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+        <button id="btn-mode-simu" class="px-3 py-1 rounded-md text-sm font-medium transition-colors bg-[#0EA5E9] text-zinc-950 shadow-[0_0_10px_rgba(14,165,233,0.5)]">Simu</button>
+        <button id="btn-mode-live" class="px-3 py-1 rounded-md text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-100">Live</button>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <button id="btn-simu-refresh" class="p-2 bg-[#0EA5E9] hover:bg-[#0284C7] text-zinc-950 rounded-lg transition-colors shadow-[0_0_10px_rgba(14,165,233,0.5)]" title="Simulate New Shoe">
+        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+      </button>
+      <button id="btn-live-panel-toggle" class="hidden p-2 rounded-lg transition-colors shadow-sm bg-live-500 hover:bg-live-600 text-zinc-950" title="Toggle Input Panel">
+        <i data-lucide="pencil" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div class="flex-1 relative overflow-hidden bg-zinc-950">
+    
+    <!-- Live Input Panel -->
+    <div id="live-input-panel" class="hidden absolute top-2 right-2 bg-zinc-900 border border-zinc-800 p-3 rounded-xl shadow-lg z-30 w-48">
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-center items-center bg-zinc-950 rounded-lg p-2 border border-zinc-800 h-12 gap-3">
+          <span id="live-score-p" class="text-blue-500 text-2xl font-bold">-</span>
+          <span class="text-zinc-500 text-xl font-bold">:</span>
+          <span id="live-score-b" class="text-red-500 text-2xl font-bold">-</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2" id="keypad-container">
+          <!-- Keypad buttons injected by JS -->
+        </div>
+
+        <div class="flex items-center gap-2 mt-1">
+          <input type="checkbox" id="autoHide" class="rounded border-zinc-700 bg-zinc-950 text-live-500 focus:ring-live-500">
+          <label for="autoHide" class="text-[11px] leading-tight text-zinc-400">Auto hide</label>
+        </div>
+
+        <div class="flex gap-2 mt-2">
+          <button id="btn-live-confirm" disabled class="flex-1 py-2 bg-live-500 hover:bg-live-600 disabled:opacity-50 disabled:hover:bg-live-500 text-zinc-950 rounded text-sm font-bold transition-colors">Enter</button>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-live-undo" disabled class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-100 rounded text-xs font-medium transition-colors">Undo</button>
+          <button id="btn-live-reset" disabled class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-100 rounded text-xs font-medium transition-colors">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Tab -->
+    <div id="tab-chart" class="absolute inset-0 transition-opacity duration-200 flex flex-col opacity-100 z-10">
+      <div id="chart-container" class="w-full flex-1 relative bg-zinc-950">
+        <!-- Chart Controls Group -->
+        <div class="absolute top-3 left-3 flex items-center gap-3 z-20 bg-zinc-900/50 p-1.5 rounded-xl backdrop-blur-sm border border-zinc-800/50">
+          <button id="btn-chart-download" class="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-lg transition-colors shadow-sm" title="Download Chart Image">
+            <i data-lucide="download" class="w-5 h-5"></i>
+          </button>
+          
+          <div class="h-6 w-[1px] bg-zinc-700 mx-1"></div>
+
+          <button id="btn-road-toggle" class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-[#0EA5E9] text-zinc-950 shadow-[0_0_10px_rgba(14,165,233,0.3)]">Road</button>
+
+          <div class="flex bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
+            <button id="btn-ma-period-off" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors bg-zinc-700 text-white">OFF</button>
+            <button id="btn-ma-period-6" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors text-zinc-500 hover:text-zinc-300">6</button>
+            <button id="btn-ma-period-9" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors text-zinc-500 hover:text-zinc-300">9</button>
+          </div>
+        </div>
+
+        <!-- Next Bet Indicator Group (Live Mode Only) - moved under chart download control -->
+        <div id="next-bet-indicator-wrapper" class="hidden absolute top-16 left-5 z-20 flex flex-col items-center gap-1">
+          <div id="next-bet-indicator" class="flex items-center justify-center w-10 h-10 rounded-xl border-2 font-black text-base shadow-[0_0_15px_rgba(0,0,0,0.35)] transition-all"></div>
+          <span class="text-[9px] font-extrabold tracking-wider uppercase text-zinc-400 select-none bg-zinc-900/40 px-1 py-0.5 rounded-md backdrop-blur-xs">Next</span>
+        </div>
+
+        <div class="absolute inset-0" id="chart-touch-container">
+          <canvas id="myChart"></canvas>
+        </div>
+
+        <!-- Hand Info Display (Demo Mode Only) -->
+        <div id="hand-info-display" class="hidden absolute top-16 left-3 z-20 bg-zinc-900/80 p-2 rounded-lg border border-zinc-800/50 backdrop-blur-sm text-xs flex gap-3 items-center shadow-lg">
+          <div class="flex items-center gap-1.5">
+            <span class="text-zinc-500 uppercase font-semibold text-[10px] tracking-wider">Hand</span>
+            <span id="info-hand-num" class="text-white font-mono font-bold text-sm tracking-tighter">#0</span>
+          </div>
+          <div class="h-3 w-[1px] bg-zinc-700/50"></div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-zinc-500 uppercase font-semibold text-[10px] tracking-wider">Sum</span>
+            <span id="info-hand-sum" class="font-mono font-bold text-sm tracking-tighter">0</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Big Road Container -->
+      <div id="big-road-container" class="h-[20%] min-h-[100px] border-t border-zinc-800">
+         <div class="h-full overflow-x-auto overflow-y-hidden bg-zinc-950 p-1 custom-scrollbar" id="big-road-scroll">
+            <div id="big-road-grid" class="flex flex-col h-full w-max gap-[1px] bg-zinc-800 border border-zinc-800">
+               <!-- Rows injected by JS -->
+            </div>
+         </div>
+      </div>
+    </div>
+
+    <!-- Log Tab -->
+    <div id="tab-log" class="absolute inset-0 overflow-y-auto bg-zinc-950 transition-opacity duration-200 opacity-0 pointer-events-none z-0">
+      <table class="w-full text-sm text-center text-zinc-400">
+        <thead class="text-xs text-zinc-400 uppercase bg-zinc-900 sticky top-0 shadow-sm z-20">
+          <tr>
+            <th class="px-2 py-3 font-semibold">#</th>
+            <th class="px-2 py-3 font-semibold">Score</th>
+            <th class="px-2 py-3 font-semibold">Win</th>
+            <th class="px-2 py-3 font-semibold">Bet</th>
+            <th class="px-2 py-3 font-semibold">Sum</th>
+          </tr>
+        </thead>
+        <tbody id="log-tbody" class="divide-y divide-zinc-800/50">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Strategy Tab -->
+    <div id="tab-strategy" class="absolute inset-0 overflow-y-auto bg-zinc-950 transition-opacity duration-200 p-6 opacity-0 pointer-events-none z-0">
+      <h2 class="text-xl font-bold text-zinc-100 mb-4">Betting Strategy</h2>
+      <div class="space-y-4 text-zinc-300 text-sm">
+        <p>The system determines the next bet based on the outcome of the previous hand.</p>
+        <div class="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+          <h3 class="text-[#0EA5E9] font-bold mb-2">Bet on the Streak (S)</h3>
+          <p class="mb-2">If the absolute score delta between Banker and Player is 5 or greater (Δ ≥ 5):</p>
+          <p class="text-zinc-400">We bet on the streak (same as previous hand winner/outcome) for the upcoming hand.</p>
+        </div>
+        <div class="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+          <h3 class="text-red-400 font-bold mb-2">Bet on the Opposite (O)</h3>
+          <p class="mb-2">If the absolute score delta between Banker and Player is less than 5 (Δ &lt; 5):</p>
+          <p class="text-zinc-400">We bet on the opposite of the previous hand winner for the upcoming hand.</p>
+        </div>
+        <div class="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+          <h3 class="text-green-400 font-bold mb-2">Tie Outcomes</h3>
+          <p class="text-zinc-400">Ties are ignored or skipped entirely for betting decisions and are bypassed in the performance chart.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calculator (Live Mode Only) -->
+  <baccarat-calculator id="live-calculator" class="hidden z-20 px-4 py-4"></baccarat-calculator>
+
+  <!-- Bottom Navigation -->
+  <div id="bottom-nav" class="flex-none flex bg-zinc-900 border-t border-zinc-800 p-2 gap-2 z-20">
+    <button id="btn-tab-chart" class="flex-1 py-3 flex items-center justify-center rounded-lg transition-colors text-[#0EA5E9] bg-[#0EA5E9]/10 shadow-[inset_0_0_10px_rgba(14,165,233,0.2)]">
+      <span class="text-xs font-bold uppercase tracking-wider">Chart</span>
+    </button>
+    <button id="btn-tab-log" class="flex-1 py-3 flex items-center justify-center rounded-lg transition-colors text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50">
+      <span class="text-xs font-bold uppercase tracking-wider">Audit Log</span>
+    </button>
+    <button id="btn-tab-strategy" class="flex-1 py-3 flex items-center justify-center rounded-lg transition-colors text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50">
+      <span class="text-xs font-bold uppercase tracking-wider">Strategy</span>
+    </button>
+  </div>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="reset-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-xl shadow-2xl max-w-xs w-full mx-4">
+      <h3 class="text-lg font-bold text-zinc-100 mb-2">Reset Data?</h3>
+      <p class="text-sm text-zinc-400 mb-6">This will clear all live tracking data. This action cannot be undone.</p>
+      <div class="flex gap-3">
+        <button id="btn-reset-cancel" class="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-lg text-sm font-medium transition-colors">Cancel</button>
+        <button id="btn-reset-confirm" class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=3"></script>
+</body>
+</html>

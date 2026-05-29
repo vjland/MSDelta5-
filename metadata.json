@@ -1,0 +1,5 @@
+{
+  "name": "MetaState/d5",
+  "description": "8-deck baccarat simulator testing a state transition strategy based on hand delta ≥ 5 vs opposite betting.",
+  "requestFramePermissions": []
+}
